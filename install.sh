@@ -86,7 +86,7 @@ if (( UNINSTALL )); then
   for rel in "${INSTALLED_RELS[@]}"; do
     if [[ -e "$DSH_HOME/$rel" ]] && [[ ! -e "$BACKUP/$rel" ]]; then
       ok "remove $rel (not in backup)"
-      if (( ! DRY_RUN )); then rm -rf "$DSH_HOME/$rel"; fi
+      if (( ! DRY_RUN )); then rm -rf "${DSH_HOME:?}/$rel"; fi
     else
       skip "keep $rel (restored from backup or untouched)"
     fi
