@@ -20,10 +20,15 @@ const sandbox = {};
 vm.createContext(sandbox);
 vm.runInContext(parserSrc + '\n;this.parseUnifiedDiff = parseUnifiedDiff;', sandbox);
 
-const patch = readFileSync(
-  'C:/Users/Ed/.dsh/sessions/--C-Users-Ed-Downloads-deepseektest--/session-109e92d6-4489-4fe4-9ff4-e5c2a8ff2f27/auto-diff.patch',
-  'utf8',
-);
+// Inline sample in the shape the harness writes (a single created file):
+// --- /dev/null / +++ b/<name> / @@ -0,0 +1,1 @@ / one added line.
+const patch = [
+  '--- /dev/null',
+  '+++ b/autodiff-autod4-trigger.txt',
+  '@@ -0,0 +1,1 @@',
+  '+autod-4 raw-ctx heartbeat e2e trigger',
+  '',
+].join('\n');
 
 const files = sandbox.parseUnifiedDiff(patch);
 console.log('file blocks:', files.length);
