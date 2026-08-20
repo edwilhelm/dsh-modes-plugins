@@ -46,7 +46,7 @@ fi
 
 # ---- uninstall mode --------------------------------------------------------
 if (( UNINSTALL )); then
-  BACKUP="$(ls -1d "$DSH_HOME"/.dsh-modes-plugins-backup-* 2>/dev/null | sort | tail -n 1 || true)"
+  BACKUP="$(find "$DSH_HOME" -maxdepth 1 -type d -name '.dsh-modes-plugins-backup-*' -print | sort | tail -n 1 || true)"
   if [[ -z "$BACKUP" || ! -d "$BACKUP" ]]; then
     warn "No backup found under $DSH_HOME (nothing to restore)."
     echo "If you want to remove the installed presets/web-profile anyway, delete them manually:"
@@ -97,7 +97,7 @@ if (( UNINSTALL )); then
     ok "Backup kept: $BACKUP"
   else
     log "Removing backup $BACKUP"
-    if (( ! DRY_RUN )); then rm -rf "$BACKUP"; fi
+    if (( ! DRY_RUN )); then rm -rf "${BACKUP:?}"; fi
   fi
 
   log "Uninstall complete"
