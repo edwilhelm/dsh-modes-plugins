@@ -124,6 +124,28 @@ The script will:
 - `-DryRun` / `--dry-run` — preview without changing anything
 - `-Yes` / `--yes` — skip prompts (keeps the placeholder opencode path)
 
+### Uninstalling
+
+Both installers restore the previous state from the latest backup:
+
+**Windows:**
+```powershell
+.\install.ps1 -Uninstall
+```
+
+**macOS / Linux:**
+```bash
+./install.sh --uninstall
+```
+
+What `--uninstall` does:
+1. Finds the newest backup folder (`$DSH_HOME/.dsh-modes-plugins-backup-<timestamp>`)
+2. **Restores** every backed-up file to its original location
+3. **Removes** presets/web-profile files that were created by the installer and didn't exist before
+4. Deletes the backup folder (use `-KeepBackup` / `--keep-backup` to keep it)
+
+If no backup exists (e.g., a clean install with nothing pre-existing), it prints manual removal instructions instead. Combine with `-DryRun` / `--dry-run` to preview before touching anything.
+
 ### Option B: manual copy
 
 ```bash

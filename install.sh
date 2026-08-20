@@ -7,6 +7,7 @@
 #   ./install.sh              # install (prompts)
 #   ./install.sh --dry-run    # preview only
 #   ./install.sh --yes        # skip prompts
+#   ./install.sh --uninstall  # restore from the latest backup
 #   DSH_HOME=/custom ./install.sh   # override install root
 #
 set -euo pipefail
@@ -14,10 +15,14 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DRY_RUN=0
 YES=0
+UNINSTALL=0
+KEEP_BACKUP=0
 for arg in "$@"; do
   case "$arg" in
-    --dry-run|-n) DRY_RUN=1 ;;
-    --yes|-y)     YES=1 ;;
+    --dry-run|-n)   DRY_RUN=1 ;;
+    --yes|-y)       YES=1 ;;
+    --uninstall|-u) UNINSTALL=1 ;;
+    --keep-backup)  KEEP_BACKUP=1 ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -37,6 +42,71 @@ warn() { printf '\033[33m    %s\033[0m\n' "$*"; }
 if [[ ! -d "$PRESETS_SRC" || ! -d "$WEB_SRC" ]]; then
   echo "error: run from the repository root ($REPO_ROOT)" >&2
   exit 1
+fi
+
+# ---- uninstall mode --------------------------------------------------------
+if (( UNINSTALL )); then
+  BACKUP="$(ls -1d "$DSH_HOME"/.dsh-modes-plugins-backup-* 2>/dev/null | sort | tail -n 1 || true)"
+  if [[ -z "$BACKUP" || ! -d "$BACKUP" ]]; then
+    warn "No backup found under $DSH_HOME (nothing to restore)."
+    echo "If you want to remove the installed presets/web-profile anyway, delete them manually:"
+    echo "    rm -rf '$PRESETS_DST'"
+    echo "    rm -f  '$WEB_DST/cordis.patch.yml'   # only if you do not use the auto-diff patch"
+    exit 0
+  fi
+  log "Uninstalling — restoring from $BACKUP"
+
+  # The complete set of paths the installer may have touched (relative to DSH_HOME).
+  INSTALLED_RELS=()
+  for preset_dir in "$PRESETS_SRC"/*/; do
+    INSTALLED_RELS+=(".agent-presets/$(basename "$preset_dir")")
+  done
+  for f in "${WEB_FILES[@]}"; do
+    INSTALLED_RELS+=("profiles/web/$f")
+  done
+  INSTALLED_RELS+=("profiles/web/plugins/subagent-acp")
+
+  # 1) Restore every backed-up item back to its original location.
+  log "Restoring backed-up files"
+  RESTORED=0
+  while IFS= read -r -d '' file; do
+    rel="${file#"$BACKUP"/}"
+    dest="$DSH_HOME/$rel"
+    ok "restore $rel"
+    if (( ! DRY_RUN )); then
+      mkdir -p "$(dirname "$dest")"
+      cp -f "$file" "$dest"
+    fi
+    RESTORED=1
+  done < <(find "$BACKUP" -type f -print0)
+  (( RESTORED )) || skip 'Backup is empty — nothing to restore'
+
+  # 2) Remove installed items that were NOT in the backup (created by installer).
+  log "Removing installer-created items not present in the backup"
+  for rel in "${INSTALLED_RELS[@]}"; do
+    if [[ -e "$DSH_HOME/$rel" ]] && [[ ! -e "$BACKUP/$rel" ]]; then
+      ok "remove $rel (not in backup)"
+      if (( ! DRY_RUN )); then rm -rf "$DSH_HOME/$rel"; fi
+    else
+      skip "keep $rel (restored from backup or untouched)"
+    fi
+  done
+
+  # 3) Optionally clean up the backup folder.
+  if (( KEEP_BACKUP )); then
+    ok "Backup kept: $BACKUP"
+  else
+    log "Removing backup $BACKUP"
+    if (( ! DRY_RUN )); then rm -rf "$BACKUP"; fi
+  fi
+
+  log "Uninstall complete"
+  echo
+  printf '\033[36mNext steps:\033[0m\n'
+  echo '  1. Restart the harness (dsh web restart)'
+  echo '  2. The previous state is restored; installed modes no longer load'
+  if (( DRY_RUN )); then echo; warn 'DRY RUN — nothing was changed.'; fi
+  exit 0
 fi
 
 log "Installing to $DSH_HOME"

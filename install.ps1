@@ -22,16 +22,29 @@
   Skip the confirmation prompt and the opencode-path prompt (keeps the
   placeholder path from web-profile/cordis.patch.yml).
 
+.PARAMETER Uninstall
+  Restore the previous state from the latest backup folder
+  ($DshHome\.dsh-modes-plugins-backup-<timestamp>). Presets and web-profile
+  files that were created by the installer and didn't exist before are removed.
+
+.PARAMETER KeepBackup
+  When used with -Uninstall, keep the backup folder instead of deleting it.
+
 .EXAMPLE
   .\install.ps1 -DryRun
   .\install.ps1
   .\install.ps1 -DshHome C:\custom\dsh -Yes
+  .\install.ps1 -Uninstall
+  .\install.ps1 -Uninstall -DryRun
+  .\install.ps1 -Uninstall -KeepBackup
 #>
 [CmdletBinding()]
 param(
   [string]$DshHome = $(if ($env:DSH_HOME) { $env:DSH_HOME } else { Join-Path $HOME '.dsh' }),
   [switch]$DryRun,
-  [switch]$Yes
+  [switch]$Yes,
+  [switch]$Uninstall,
+  [switch]$KeepBackup
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,6 +62,78 @@ $WebFiles   = @('cordis.yml', 'cordis.patch.yml', 'package.json', 'pnpm-workspac
 
 if (-not (Test-Path $PresetsSrc)) { throw "Not found: $PresetsSrc (run from the repo root)" }
 if (-not (Test-Path $WebSrc))     { throw "Not found: $WebSrc" }
+
+# ---- uninstall mode --------------------------------------------------------
+if ($Uninstall) {
+  $PresetsDst = Join-Path $DshHome '.agent-presets'
+  $WebDst     = Join-Path $DshHome 'profiles\web'
+  $backups = @(Get-ChildItem $DshHome -Directory -Filter '.dsh-modes-plugins-backup-*' -ErrorAction SilentlyContinue | Sort-Object Name -Descending)
+  if ($backups.Count -eq 0) {
+    Write-Warn "No backup found under $DshHome (nothing to restore)."
+    Write-Host 'If you want to remove the installed presets/web-profile anyway, delete them manually:'
+    Write-Host "    Remove-Item '$PresetsDst' -Recurse -Force"
+    Write-Host "    Remove-Item '$WebDst\cordis.patch.yml' -Force  # (only if you do not use the auto-diff patch)"
+    exit 0
+  }
+  $Backup = $backups[0]
+  Write-Step "Uninstalling -- restoring from $Backup"
+
+  # The complete set of paths the installer may have touched (relative to DshHome).
+  $installedRels = @()
+  foreach ($preset in Get-ChildItem $PresetsSrc -Directory) {
+    $installedRels += ".agent-presets\$($preset.Name)"
+  }
+  foreach ($f in $WebFiles) { $installedRels += "profiles\web\$f" }
+  $installedRels += 'profiles\web\plugins\subagent-acp'
+
+  # 1) Restore every backed-up item back to its original location.
+  Write-Step 'Restoring backed-up files'
+  # NOTE: pass $Backup.FullName (string), not the DirectoryInfo object —
+  # Get-ChildItem with a DirectoryInfo + -Recurse returns 0 items here.
+  $backupFiles = Get-ChildItem $Backup.FullName -Recurse -File -ErrorAction SilentlyContinue
+  if ($backupFiles) {
+    foreach ($file in $backupFiles) {
+      $rel = $file.FullName.Substring($Backup.FullName.Length).TrimStart('\', '/')
+      $dest = Join-Path $DshHome $rel
+      Write-Ok "restore $rel"
+      if (-not $DryRun) {
+        New-Item -ItemType Directory -Force -Path (Split-Path $dest) | Out-Null
+        Copy-Item $file.FullName $dest -Force
+      }
+    }
+  } else {
+    Write-Skip 'Backup is empty -- nothing to restore'
+  }
+
+  # 2) Remove installed items that were NOT in the backup (created by installer).
+  Write-Step 'Removing installer-created items not present in the backup'
+  foreach ($rel in $installedRels) {
+    $path = Join-Path $DshHome $rel
+    $inBackup = Test-Path (Join-Path $Backup.FullName $rel)
+    if ((Test-Path $path) -and (-not $inBackup)) {
+      Write-Ok "remove $rel (not in backup)"
+      if (-not $DryRun) { Remove-Item $path -Recurse -Force }
+    } else {
+      Write-Skip "keep $rel (restored from backup or untouched)"
+    }
+  }
+
+  # 3) Optionally clean up the backup folder.
+  if ($KeepBackup) {
+    Write-Ok "Backup kept: $($Backup.FullName)"
+  } else {
+    Write-Step "Removing backup $($Backup.FullName)"
+    if (-not $DryRun) { Remove-Item $Backup.FullName -Recurse -Force }
+  }
+
+  Write-Step 'Uninstall complete'
+  Write-Host ''
+  Write-Host 'Next steps:' -ForegroundColor Cyan
+  Write-Host '  1. Restart the harness (dsh web restart)'
+  Write-Host '  2. The previous state is restored; installed modes no longer load'
+  if ($DryRun) { Write-Host ''; Write-Warn 'DRY RUN -- nothing was changed.' }
+  exit 0
+}
 
 Write-Step "Installing to $DshHome"
 
@@ -141,7 +226,7 @@ if ($content -match 'C:/PATH/TO/opencode\.exe') {
   }
   if ($Yes -or -not $candidate) {
     if ($Yes) {
-      Write-Warn 'Keeping placeholder C:/PATH/TO/opencode.exe — edit it in cordis.patch.yml yourself.'
+      Write-Warn 'Keeping placeholder C:/PATH/TO/opencode.exe -- edit it in cordis.patch.yml yourself.'
     } else {
       Write-Warn "Could not auto-detect opencode. Edit 'C:/PATH/TO/opencode.exe' in $PatchPath yourself."
     }
@@ -164,4 +249,4 @@ Write-Host ''
 Write-Host 'Next steps:' -ForegroundColor Cyan
 Write-Host '  1. Restart the harness (dsh web restart)'
 Write-Host '  2. Pick a mode: acp | autodiff | orchestrator'
-if ($DryRun) { Write-Host ''; Write-Warn 'DRY RUN — nothing was changed.' }
+if ($DryRun) { Write-Host ''; Write-Warn 'DRY RUN -- nothing was changed.' }
