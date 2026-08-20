@@ -88,13 +88,17 @@ if ($toBackup.Count -gt 0) {
 }
 
 # ---- 2. copy agent presets -------------------------------------------------
+# NOTE: Copy-Item -Recurse into an existing directory creates a subfolder
+# (e.g. autodiff/autodiff/). To MERGE contents into the target we first
+# create the destination dir, then copy the *contents* of the source.
 Write-Step "Copying agent presets"
 foreach ($preset in Get-ChildItem $PresetsSrc -Directory) {
   $dst = Join-Path $PresetsDst $preset.Name
   Write-Ok "agent-presets/$($preset.Name) -> .agent-presets/$($preset.Name)"
   if (-not $DryRun) {
     New-Item -ItemType Directory -Force -Path $PresetsDst | Out-Null
-    Copy-Item $preset.FullName $dst -Recurse -Force
+    New-Item -ItemType Directory -Force -Path $dst | Out-Null
+    Copy-Item (Join-Path $preset.FullName '*') $dst -Recurse -Force
   }
 }
 
@@ -106,12 +110,12 @@ foreach ($f in $WebFiles) {
   Write-Ok "web-profile/$f -> profiles/web/$f"
   if (-not $DryRun) { Copy-Item $src (Join-Path $WebDst $f) -Force }
 }
-# plugins
+# plugins (same content-merge approach as presets)
 if (Test-Path (Join-Path $WebSrc 'plugins\subagent-acp')) {
   Write-Ok 'web-profile/plugins/subagent-acp -> profiles/web/plugins/subagent-acp'
   if (-not $DryRun) {
-    New-Item -ItemType Directory -Force -Path (Join-Path $WebDst 'plugins') | Out-Null
-    Copy-Item (Join-Path $WebSrc 'plugins\subagent-acp') $webPluginDst -Recurse -Force
+    New-Item -ItemType Directory -Force -Path $webPluginDst | Out-Null
+    Copy-Item (Join-Path (Join-Path $WebSrc 'plugins\subagent-acp') '*') $webPluginDst -Recurse -Force
   }
 }
 

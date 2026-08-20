@@ -69,13 +69,15 @@ else
 fi
 
 # ---- 2. copy agent presets ------------------------------------------------
+# NOTE: `cp -R src dst` where dst already exists creates dst/src (nested).
+# Copy the *contents* with a trailing "/." so existing dirs are merged.
 log "Copying agent presets"
 for preset_dir in "$PRESETS_SRC"/*/; do
   name="$(basename "$preset_dir")"
   ok "agent-presets/$name -> .agent-presets/$name"
   if (( ! DRY_RUN )); then
-    mkdir -p "$PRESETS_DST"
-    cp -R "$preset_dir" "$PRESETS_DST/$name"
+    mkdir -p "$PRESETS_DST/$name"
+    cp -R "$preset_dir/." "$PRESETS_DST/$name/"
   fi
 done
 
@@ -91,8 +93,8 @@ done
 if [[ -d "$WEB_SRC/plugins/subagent-acp" ]]; then
   ok "web-profile/plugins/subagent-acp -> profiles/web/plugins/subagent-acp"
   if (( ! DRY_RUN )); then
-    mkdir -p "$WEB_DST/plugins"
-    cp -R "$WEB_SRC/plugins/subagent-acp" "$WEB_DST/plugins/"
+    mkdir -p "$WEB_DST/plugins/subagent-acp"
+    cp -R "$WEB_SRC/plugins/subagent-acp/." "$WEB_DST/plugins/subagent-acp/"
   fi
 fi
 
