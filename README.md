@@ -16,8 +16,8 @@ Custom agent presets (modes), plugins, and skills for the [DeepSeek Harness](htt
 │   ├── host.js / client.js     # Dynamic dual-half Cordis package
 │   ├── durable/                # Static client plugin (for restart-persistent install)
 │   └── fork-scaffold/          # Scaffold for building new Cordis plugins
-├── docs/acp/                   # ACP protocol documentation and reference
 ├── examples/                   # Example configuration snippets
+├── install.ps1 / install.sh    # One-command installer (backup + auto-detect)
 ├── README.md
 └── LICENSE
 ```
