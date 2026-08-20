@@ -1,0 +1,10 @@
+﻿# Example \/settings.yaml fragment for the Orchestrator preset.
+# Copy the orchestrator: block into your own settings.yaml and edit the routes.
+# The orchestrator model cannot change these values; they are user-owned.
+orchestrator:
+  orchestrator:
+    provider: grok
+    model: grok-4.6
+  subagent:
+    provider: clinepass
+    model: cline-pass/deepseek-v4-flash

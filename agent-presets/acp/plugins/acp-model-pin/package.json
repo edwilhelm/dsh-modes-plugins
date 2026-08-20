@@ -1,0 +1,7 @@
+{
+  "name": "dsh-acp-model-pin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Binds the ACP preset's agent sessions to the acp LLM route. The host-side adapter lives in the subagent-acp profile plugin.",
+  "main": "index.cjs"
+}

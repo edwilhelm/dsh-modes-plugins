@@ -1,0 +1,7 @@
+{
+  "name": "dsh-orchestrator-skills",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Orchestrator sees skill descriptions only; spawned sub-agents receive the full SKILL.md after the hand-off prompt.",
+  "main": "plugin.cjs"
+}

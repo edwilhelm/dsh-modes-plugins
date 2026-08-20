@@ -1,0 +1,7 @@
+{
+  "name": "dsh-orchestrator-models",
+  "version": "1.0.0",
+  "private": true,
+  "description": "User-owned orchestrator and sub-agent model binding for the orchestrator preset. Reads $DSH_HOME/settings.yaml namespace `orchestrator`; never exposes a model-facing write tool.",
+  "main": "index.cjs"
+}

@@ -1,0 +1,7 @@
+name: AutoDiff
+description: >-
+  Standard coding agent (cordis base) plus the persisted auto-diff session
+  snapshot plugins: v1 (write/edit only, disabled) and v2 (write/edit plus
+  pwsh rename/move/delete tracking). Each session's accumulated patch is
+  written to its own record directory, auto-diff.patch next to
+  session.jsonl.zstd under $DSH_HOME/sessions.

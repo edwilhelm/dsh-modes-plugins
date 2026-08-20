@@ -1,0 +1,7 @@
+{
+  "name": "dsh-auto-diff-v2",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Auto-diff session snapshot plugin v2: write/edit capture plus pwsh rename/move/delete tracking, writing the unified diff next to the session's own record (auto-diff.patch beside session.jsonl.zstd under $DSH_HOME/sessions) at each session turn end.",
+  "main": "index.cjs"
+}

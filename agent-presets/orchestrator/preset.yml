@@ -1,0 +1,7 @@
+name: Orchestrator
+description: >-
+  Full coding agent that runs as an orchestrator. The user chooses two models
+  independently: the orchestrator route, and the route used by every sub-agent
+  this orchestrator spawns. Neither choice is exposed as a model-facing tool.
+  The orchestrator sees skill descriptions only and hands the matching SKILL.md
+  to a spawned sub-agent after the hand-off prompt.

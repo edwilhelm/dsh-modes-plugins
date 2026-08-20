@@ -1,0 +1,33 @@
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+
+# Auto-Diff Review: host Remote service + browser settings panel, added by the
+# profile patch layer (after the web-app bundle insert).
+- insert:
+    - id: auto-diff-host
+      name: '@deepseek-ai/dsh-auto-diff-host'
+
+    - id: auto-diff-ui
+      name: '@deepseek-ai/dsh-client-auto-diff-review'
+
+    # ACP client provider (host plane): lets the harness delegate execution to
+    # ACP v1 servers over stdio (newline-delimited JSON-RPC 2.0). Mounted once
+    # per process; agent presets only expose the matching tool row. Configured
+    # for `opencode acp` — command must be a directly spawnable executable
+    # (Windows: the real .exe, not the npm .ps1/.cmd shim).
+    - id: subagent-acp
+      # Cache-busting query: the loader only re-imports a module when the row's
+      # `name` changes, so a bumped ?reload= forces a fresh instance after edits.
+      name: ./plugins/subagent-acp/index.mjs?reload=2
+      config:
+        providerName: acp
+        # Replace with the absolute path to your own opencode executable.
+        # Windows note: use the real .exe (npm install path), not the .ps1/.cmd shim.
+        command: C:/PATH/TO/opencode.exe
+        args:
+          - acp
+        # deny (default): the remote agent's permission requests are rejected,
+        # mirroring the harness's pinned approval policy for delegated work.
+        permissionMode: deny
+

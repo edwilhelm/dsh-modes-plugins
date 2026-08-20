@@ -1,0 +1,22 @@
+# Dependencies — never commit installed packages
+node_modules/
+.pnpm-store/
+
+# Local DSH state — never commit sessions, storage, or credentials
+.dsh/
+sessions/
+storages/
+.credentials.yaml
+settings.yaml
+
+# Editor / OS cruft
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Scratch / logs
+*.log
+*.tmp

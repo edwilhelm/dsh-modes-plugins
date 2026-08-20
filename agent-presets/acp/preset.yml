@@ -1,0 +1,2 @@
+name: ACP
+description: Full coding agent (copy of standard) that can delegate execution to ACP v1 servers — other harnesses/agents speaking the Agent Client Protocol over stdio (e.g. `opencode acp`).
