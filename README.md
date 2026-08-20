@@ -100,7 +100,31 @@ See `review-mode/README.md` for the full runbook.
 - DeepSeek Harness (v0.1.0-rc.6 or later)
 - `$DSH_HOME` set to `~/.dsh` (default)
 
-### 1. Copy agent presets
+### Option A: install script (recommended)
+
+**Windows:**
+```powershell
+.\install.ps1
+```
+
+**macOS / Linux:**
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+The script will:
+1. Detect your `$DSH_HOME` (defaults to `~/.dsh`, respects the `$DSH_HOME` env var)
+2. **Back up** any existing files it's about to overwrite into a timestamped folder (`$DSH_HOME/.dsh-modes-plugins-backup-<timestamp>`)
+3. Copy all agent presets, plugins, skills, and web-profile configuration
+4. Auto-detect your `opencode` path and update `cordis.patch.yml` (if `opencode` is installed)
+5. Print next steps
+
+**Flags:**
+- `-DryRun` / `--dry-run` — preview without changing anything
+- `-Yes` / `--yes` — skip prompts (keeps the placeholder opencode path)
+
+### Option B: manual copy
 
 ```bash
 # All presets
@@ -110,17 +134,9 @@ cp -r agent-presets/* $DSH_HOME/.agent-presets/
 cp -r agent-presets/acp $DSH_HOME/.agent-presets/
 cp -r agent-presets/autodiff $DSH_HOME/.agent-presets/
 cp -r agent-presets/orchestrator $DSH_HOME/.agent-presets/
-```
 
-### 2. Apply web profile patches
-
-```bash
-# Back up your existing profile first!
-cp $DSH_HOME/profiles/web/cordis.patch.yml $DSH_HOME/profiles/web/cordis.patch.yml.bak
-
-# Copy the custom patch and plugins
-cp web-profile/cordis.patch.yml $DSH_HOME/profiles/web/
-cp -r web-profile/plugins $DSH_HOME/profiles/web/
+# Web profile
+cp -r web-profile/* $DSH_HOME/profiles/web/
 ```
 
 Then edit `$DSH_HOME/profiles/web/cordis.patch.yml` to fix the `command` path for your ACP server.
