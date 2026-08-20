@@ -1,0 +1,67 @@
+name: validate
+on: [push, pull_request]
+
+jobs:
+  # ── Linux: YAML syntax, JS syntax, review-mode tests, shellcheck ──
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: YAML syntax
+        run: |
+          pip install pyyaml --quiet 2>/dev/null
+          python3 - <<'PY'
+          import sys, yaml, pathlib
+          # DSH compositions use custom `!!js` tags (e.g. disabled: !!js process.platform === 'win32').
+          # Treat any `!!js <expr>` as a plain scalar so structure still validates.
+          def js_ctor(loader, tag_suffix, node):
+              return loader.construct_scalar(node)
+          yaml.SafeLoader.add_multi_constructor('tag:yaml.org,2002:js', js_ctor)
+          errors = 0
+          for p in pathlib.Path('.').rglob('*.yml'):
+              if 'node_modules' in str(p):
+                  continue
+              try:
+                  yaml.safe_load(p.read_text())
+                  print(f'OK  {p}')
+              except Exception as e:
+                  print(f'FAIL {p}: {e}')
+                  errors += 1
+          sys.exit(errors)
+          PY
+
+      - name: node --check (all .js / .mjs / .cjs)
+        run: |
+          errors=0
+          while IFS= read -r -d '' f; do
+            echo "checking $f"
+            node --check "$f" || { errors=$((errors+1)); }
+          done < <(find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) ! -path '*/node_modules/*' -print0)
+          exit $errors
+
+      - name: Review-mode tests (zero-dependency)
+        run: |
+          node review-mode/test-parser.mjs
+          node review-mode/test-multifile.mjs
+          node review-mode/test-host.mjs
+
+      - name: Shellcheck install.sh
+        run: shellcheck install.sh
+
+  # ── Windows: PowerShell syntax check via dry-run ──
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PowerShell syntax (dry-run install.ps1)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\install.ps1 -DryRun -Yes
+          Write-Host 'PowerShell syntax OK' -ForegroundColor Green
